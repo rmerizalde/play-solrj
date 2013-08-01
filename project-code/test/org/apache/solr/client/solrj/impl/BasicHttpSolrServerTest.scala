@@ -130,7 +130,7 @@ class BasicHttpSolrServerTest extends SolrJettyTestBase {
   @Test
   def testTimeout() : Unit = {
     new WithApplication(FakeApplication()) {
-      val server = new AsyncHttpSolrServer(jetty.getBaseUrl.toString + "/slow/foo")
+      val server = AsyncHttpSolrServer(jetty.getBaseUrl.toString + "/slow/foo")
       val q = new SolrQuery("*:*")
       server.timeout = 2000
 
@@ -169,7 +169,7 @@ class BasicHttpSolrServerTest extends SolrJettyTestBase {
       assertEquals(status + " didn't generate an UNKNOWN error code, someone modified the list of valid ErrorCode's w/o changing this test to work a different way",
         ErrorCode.UNKNOWN, ErrorCode.getErrorCode(status))
 
-      val server = new AsyncHttpSolrServer(jetty.getBaseUrl.toString + "/debug/foo")
+      val server = AsyncHttpSolrServer(jetty.getBaseUrl.toString + "/debug/foo")
       DebugServlet.errorCode = status
       val q = new SolrQuery("foo")
 
@@ -195,7 +195,7 @@ class BasicHttpSolrServerTest extends SolrJettyTestBase {
   def testQuery() : Unit = {
     new WithApplication(FakeApplication()) {
       DebugServlet.clear()
-      val server = new AsyncHttpSolrServer(jetty.getBaseUrl.toString + "/debug/foo")
+      val server = AsyncHttpSolrServer(jetty.getBaseUrl.toString + "/debug/foo")
       val q = new SolrQuery("foo")
       q.setParam("a", "\u1234")
 
@@ -312,7 +312,7 @@ class BasicHttpSolrServerTest extends SolrJettyTestBase {
   def testDelete() : Unit = {
     new WithApplication(FakeApplication()) {
       DebugServlet.clear()
-      val server = new AsyncHttpSolrServer(jetty.getBaseUrl.toString + "/debug/foo")
+      val server = AsyncHttpSolrServer(jetty.getBaseUrl.toString + "/debug/foo")
 
       var response = server.deleteById("id").map( response => {
         // do nothing
@@ -369,7 +369,7 @@ class BasicHttpSolrServerTest extends SolrJettyTestBase {
   def testUpdate() : Unit = {
     new WithApplication(FakeApplication()) {
       DebugServlet.clear()
-      val server = new AsyncHttpSolrServer(jetty.getBaseUrl.toString + "/debug/foo")
+      val server = AsyncHttpSolrServer(jetty.getBaseUrl.toString + "/debug/foo")
       val req = new AsyncUpdateRequest
 
       req.add(new SolrInputDocument())
@@ -457,7 +457,7 @@ class BasicHttpSolrServerTest extends SolrJettyTestBase {
   @Test
  	def testRedirect() : Unit = {
     new WithApplication(FakeApplication()) {
- 	    val server = new AsyncHttpSolrServer(jetty.getBaseUrl().toString() +"/redirect/foo");
+ 	    val server = AsyncHttpSolrServer(jetty.getBaseUrl().toString() +"/redirect/foo");
  	    val q = new SolrQuery("*:*");
 
  	    // default = false

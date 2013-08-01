@@ -27,6 +27,16 @@ import org.apache.http.client.entity.UrlEncodedFormEntity
 import org.apache.solr.client.solrj.request.RequestWriter
 
 
+object AsyncHttpSolrServer {
+  /**
+   * @param baseUrl
+   *          The URL of the Solr server. For example, "
+   *          <code>http://localhost:8983/solr/</code>" if you are using the
+   *          standard distribution Solr webapp on your local machine.
+   */
+  def apply(baseUrl: String) = new AsyncHttpSolrServer(baseUrl, new BinaryResponseParser)
+}
+
 /**
  * This class implements functionality to communicate with Solr asynchronously via HTTP.
  *
@@ -37,11 +47,11 @@ import org.apache.solr.client.solrj.request.RequestWriter
  * @todo use ning's AsyncHttpClient directly? How about Apache's HttpAsyncClient for Java implementation?
  *
  * @constructor create new asynchronous HTTP Solr server
- * @param baseUrl the URL of the Solr server
+ * @param _baseUrl the URL of the Solr server
  * @param parser the parser used to parse responses from Solr
  *
  */
-class AsyncHttpSolrServer(var baseUrl: String, var parser: ResponseParser) extends AsyncSolrServer {
+class AsyncHttpSolrServer(_baseUrl: String, var parser: ResponseParser) extends AsyncSolrServer {
   /**
    * User-Agent String.
    */
@@ -52,44 +62,22 @@ class AsyncHttpSolrServer(var baseUrl: String, var parser: ResponseParser) exten
 
   // @todo revisit the need for invariantParams
   private[this] val _invariantParams : ModifiableSolrParams = null
-  private[this] var _requestWriter: RequestWriter = new RequestWriter
-  // @todo implement retries
-  //private[this] var maxRetries = 0
-  private[this] var _useMultiPartPost = false
-  private[this] var _followRedirects = false
-  private[this] var _timeout = 0 // default is to wait infinitely
 
-  def timeout = _timeout
-  def timeout_=(timeout: Int) { _timeout = timeout }
-
-  def followRedirects = _followRedirects
-  def followRedirects_=(followRedirects: Boolean) { _followRedirects = followRedirects }
-
-  def requestWriter = _requestWriter
-  def requestWriter_=(requestWriter: RequestWriter) { _requestWriter = requestWriter }
-
-  def useMultiPartPost = _useMultiPartPost
-  def useMultiPartPost_=(useMultiPartPost: Boolean) { _useMultiPartPost = useMultiPartPost }
-
-  /**
-   * @param baseUrl
-   *          The URL of the Solr server. For example, "
-   *          <code>http://localhost:8983/solr/</code>" if you are using the
-   *          standard distribution Solr webapp on your local machine.
-   */
-  def this(baseUrl: String) = this(baseUrl, new BinaryResponseParser)
-
-  def init() = {
-    if (baseUrl.endsWith("/")) {
-      baseUrl = baseUrl.substring(0, baseUrl.length - 1)
-    }
-    if (baseUrl.indexOf('?') >= 0) {
-      throw new RuntimeException(
-          "Invalid base url for solrj.  The base URL must not contain parameters: " + baseUrl)
-    }
+  val baseUrl: String = _baseUrl match {
+    case _baseUrl if _baseUrl.endsWith("/") => _baseUrl.substring(0, _baseUrl.length - 1)
+    case _baseUrl => _baseUrl
   }
 
-  init()
+  if (baseUrl.indexOf('?') >= 0) throw new RuntimeException(
+              "Invalid base url for solrj.  The base URL must not contain parameters: " + baseUrl)
+
+
+  var requestWriter: RequestWriter = new RequestWriter
+  // @todo implement retries
+  //private[this] var maxRetries = 0
+  var useMultiPartPost = false
+  var followRedirects = false
+  var timeout = 0 // default is to wait infinitely
 
   /**
    * Process the req. If
@@ -114,8 +102,8 @@ class AsyncHttpSolrServer(var baseUrl: String, var parser: ResponseParser) exten
 
   def request(req: SolrRequest, processor: ResponseParser) : Future[NamedList[Object]] = {
     var params = req.getParams
-    val streams = _requestWriter.getContentStreams(req)
-    var path = _requestWriter.getPath(req)
+    val streams = requestWriter.getContentStreams(req)
+    var path = requestWriter.getPath(req)
 
     if (path == null || !path.startsWith("/")) {
       path = DefaultPath
@@ -156,7 +144,7 @@ class AsyncHttpSolrServer(var baseUrl: String, var parser: ResponseParser) exten
         if (streams == null || isMultipart) {
           var requestHolder = WS.url(url).withHeaders(("Content-Charset", "UTF-8"))
 
-          if (!this._useMultiPartPost && !isMultipart) {
+          if (!this.useMultiPartPost && !isMultipart) {
             requestHolder = requestHolder.withHeaders(("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8"))
           }
 
@@ -167,7 +155,7 @@ class AsyncHttpSolrServer(var baseUrl: String, var parser: ResponseParser) exten
             val values = params.getParams(p)
             if (values != null) {
               for (v:String <- values) {
-                if (this._useMultiPartPost || isMultipart) {
+                if (this.useMultiPartPost || isMultipart) {
                   parts.add(new FormBodyPart(p, new StringBody(v, Charset.forName("UTF-8"))))
                 } else {
                   postParams.add(new BasicNameValuePair(p, v))
