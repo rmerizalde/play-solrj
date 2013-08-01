@@ -63,13 +63,11 @@ class AsyncHttpSolrServer(_baseUrl: String, var parser: ResponseParser) extends 
   // @todo revisit the need for invariantParams
   private[this] val _invariantParams : ModifiableSolrParams = null
 
-  val baseUrl: String = _baseUrl match {
-    case _baseUrl if _baseUrl.endsWith("/") => _baseUrl.substring(0, _baseUrl.length - 1)
-    case _baseUrl => _baseUrl
-  }
+  val baseUrl: String =
+    if (_baseUrl.endsWith("/")) _baseUrl.substring(0, _baseUrl.length - 1)
+    else _baseUrl
 
-  if (baseUrl.indexOf('?') >= 0) throw new RuntimeException(
-              "Invalid base url for solrj.  The base URL must not contain parameters: " + baseUrl)
+  if (baseUrl contains '?') throw new RuntimeException("Invalid base url for solrj.  The base URL must not contain parameters: " + baseUrl)
 
 
   var requestWriter: RequestWriter = new RequestWriter
@@ -318,5 +316,5 @@ class AsyncHttpSolrServer(_baseUrl: String, var parser: ResponseParser) extends 
     charsetName
   }
 
-  def shutdown() : Unit = {}
+  override def shutdown() : Unit = {}
 }

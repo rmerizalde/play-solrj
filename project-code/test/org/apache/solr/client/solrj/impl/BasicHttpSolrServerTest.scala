@@ -210,23 +210,10 @@ class BasicHttpSolrServerTest extends SolrJettyTestBase {
         Await.result(response, 4 seconds)
 
         //default method
-        assertEquals("get", DebugServlet.lastMethod)
-        //agent
-        assertEquals("Solr[" + classOf[AsyncHttpSolrServer].getName + "] 1.0", DebugServlet.headers.get("User-Agent"))
-        //default wt
-        assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length)
-        assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)(0))
-        //default version
-        assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length)
-        assertEquals(server.parser.getVersion, DebugServlet.parameters.get(CommonParams.VERSION)(0))
-        //keepalive
+        assertRequest(server, "get", "javabin", null, "a", "\u1234")
         assertEquals("keep-alive", DebugServlet.headers.get("Connection"))
         //content-type
         assertEquals(null, DebugServlet.headers.get("Content-Type"))
-        //param encoding
-        assertEquals(1, DebugServlet.parameters.get("a").length)
-        assertEquals("\u1234", DebugServlet.parameters.get("a")(0))
-
       } finally {
         DebugServlet.clear()
       }
@@ -241,16 +228,8 @@ class BasicHttpSolrServerTest extends SolrJettyTestBase {
 
       try {
         Await.result(response, 4 seconds)
-        assertEquals("post", DebugServlet.lastMethod)
-        assertEquals("Solr[" + classOf[AsyncHttpSolrServer].getName + "] 1.0", DebugServlet.headers.get("User-Agent"))
-        assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length)
-        assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)(0))
-        assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length)
-        assertEquals(server.parser.getVersion, DebugServlet.parameters.get(CommonParams.VERSION)(0))
-        assertEquals(1, DebugServlet.parameters.get("a").length)
-        assertEquals("\u1234", DebugServlet.parameters.get("a")(0))
+        assertRequest(server, "post", "javabin", "application/x-www-form-urlencoded; charset=UTF-8", "a", "\u1234")
         assertEquals("keep-alive", DebugServlet.headers.get("Connection"))
-        assertEquals("application/x-www-form-urlencoded; charset=UTF-8", DebugServlet.headers.get("Content-Type"))
         assertEquals("UTF-8", DebugServlet.headers.get("Content-Charset"))
       } finally {
         DebugServlet.clear()
@@ -266,14 +245,7 @@ class BasicHttpSolrServerTest extends SolrJettyTestBase {
       }
 
       try {
-        assertEquals("get", DebugServlet.lastMethod)
-        assertEquals("Solr[" + classOf[AsyncHttpSolrServer].getName + "] 1.0", DebugServlet.headers.get("User-Agent"))
-        assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length)
-        assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)(0))
-        assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length)
-        assertEquals(server.parser.getVersion, DebugServlet.parameters.get(CommonParams.VERSION)(0))
-        assertEquals(1, DebugServlet.parameters.get("a").length)
-        assertEquals("\u1234", DebugServlet.parameters.get("a")(0))
+        assertRequest(server, "get", "xml", null, "a", "\u1234")
         assertEquals("keep-alive", DebugServlet.headers.get("Connection"))
       } finally {
         DebugServlet.clear()
@@ -289,17 +261,8 @@ class BasicHttpSolrServerTest extends SolrJettyTestBase {
       }
 
       try {
-        assertEquals("post", DebugServlet.lastMethod)
-        assertEquals("Solr[" + classOf[AsyncHttpSolrServer].getName + "] 1.0", DebugServlet.headers.get("User-Agent"))
-        assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length)
-        assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)(0))
-        assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length)
-        assertEquals(server.parser.getVersion, DebugServlet.parameters.get(CommonParams.VERSION)(0))
-        assertEquals(1, DebugServlet.parameters.get("a").length)
-        assertEquals("\u1234", DebugServlet.parameters.get("a")(0))
-        assertEquals("Solr[" + classOf[AsyncHttpSolrServer].getName + "] 1.0", DebugServlet.headers.get("User-Agent"))
+        assertRequest(server, "post", "xml", "application/x-www-form-urlencoded; charset=UTF-8", "a", "\u1234")
         assertEquals("keep-alive", DebugServlet.headers.get("Connection"))
-        assertEquals("application/x-www-form-urlencoded; charset=UTF-8", DebugServlet.headers.get("Content-Type"))
         assertEquals("UTF-8", DebugServlet.headers.get("Content-Charset"))
       } finally {
         DebugServlet.clear()
@@ -324,15 +287,7 @@ class BasicHttpSolrServerTest extends SolrJettyTestBase {
       try {
         Await.result(response, 4 seconds)
         //default method
-        assertEquals("post", DebugServlet.lastMethod)
-        //agent
-        assertEquals("Solr[" + classOf[AsyncHttpSolrServer].getName + "] 1.0", DebugServlet.headers.get("User-Agent"))
-        //default wt
-        assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length)
-        assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)(0))
-        //default version
-        assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length)
-        assertEquals(server.parser.getVersion, DebugServlet.parameters.get(CommonParams.VERSION)(0))
+        assertRequest(server, "post", "javabin", "application/xml; charset=UTF-8")
         //keepalive
         assertEquals("keep-alive", DebugServlet.headers.get("Connection"))
       } finally {
@@ -351,12 +306,7 @@ class BasicHttpSolrServerTest extends SolrJettyTestBase {
 
       try {
         Await.result(response, 4 seconds)
-        assertEquals("post", DebugServlet.lastMethod)
-        assertEquals("Solr[" + classOf[AsyncHttpSolrServer].getName + "] 1.0", DebugServlet.headers.get("User-Agent"))
-        assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length)
-        assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)(0))
-        assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length)
-        assertEquals(server.parser.getVersion, DebugServlet.parameters.get(CommonParams.VERSION)(0))
+        assertRequest(server, "post", "xml", "application/xml; charset=UTF-8")
         assertEquals("keep-alive", DebugServlet.headers.get("Connection"))
       } finally {
         DebugServlet.clear()
@@ -384,21 +334,8 @@ class BasicHttpSolrServerTest extends SolrJettyTestBase {
 
       try {
         Await.result(response, 4 seconds)
-        //default method
-        assertEquals("post", DebugServlet.lastMethod)
-        //agent
-        assertEquals("Solr[" + classOf[AsyncHttpSolrServer].getName + "] 1.0", DebugServlet.headers.get("User-Agent"))
-        //default wt
-        assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length)
-        assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)(0))
-        //default version
-        assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length)
-        assertEquals(server.parser.getVersion, DebugServlet.parameters.get(CommonParams.VERSION)(0))
-        //content type
-        assertEquals("application/xml; charset=UTF-8", DebugServlet.headers.get("Content-Type"))
-        //parameter encoding
-        assertEquals(1, DebugServlet.parameters.get("a").length)
-        assertEquals("\u1234", DebugServlet.parameters.get("a")(0))
+        // default method
+        assertRequest(server, "post", "javabin", "application/xml; charset=UTF-8", "a", "\u1234")
       } finally {
         DebugServlet.clear()
       }
@@ -414,15 +351,7 @@ class BasicHttpSolrServerTest extends SolrJettyTestBase {
 
       try {
         Await.result(response, 4 seconds)
-        assertEquals("post", DebugServlet.lastMethod)
-        assertEquals("Solr[" + classOf[AsyncHttpSolrServer].getName + "] 1.0", DebugServlet.headers.get("User-Agent"))
-        assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length)
-        assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)(0))
-        assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length)
-        assertEquals(server.parser.getVersion, DebugServlet.parameters.get(CommonParams.VERSION)(0))
-        assertEquals("application/xml; charset=UTF-8", DebugServlet.headers.get("Content-Type"))
-        assertEquals(1, DebugServlet.parameters.get("a").length)
-        assertEquals("\u1234", DebugServlet.parameters.get("a")(0))
+        assertRequest(server, "post", "xml", "application/xml; charset=UTF-8", "a", "\u1234")
       } finally {
         DebugServlet.clear()
       }
@@ -438,15 +367,8 @@ class BasicHttpSolrServerTest extends SolrJettyTestBase {
       }
 
       try {
-        assertEquals("post", DebugServlet.lastMethod)
-        assertEquals("Solr[" + classOf[AsyncHttpSolrServer].getName + "] 1.0", DebugServlet.headers.get("User-Agent"))
-        assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length)
-        assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)(0))
-        assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length)
-        assertEquals(server.parser.getVersion, DebugServlet.parameters.get(CommonParams.VERSION)(0))
-        assertEquals("application/javabin", DebugServlet.headers.get("Content-Type"))
-        assertEquals(1, DebugServlet.parameters.get("a").length)
-        assertEquals("\u1234", DebugServlet.parameters.get("a")(0))
+        Await.result(response, 4 seconds)
+        assertRequest(server, "post", "javabin", "application/javabin", "a", "\u1234")
       } finally {
         DebugServlet.clear()
         server.shutdown()
@@ -455,24 +377,37 @@ class BasicHttpSolrServerTest extends SolrJettyTestBase {
   }
 
   @Test
- 	def testRedirect() : Unit = {
+ 	def testRedirectWithNoFollowing() : Unit = {
     new WithApplication(FakeApplication()) {
- 	    val server = AsyncHttpSolrServer(jetty.getBaseUrl().toString() +"/redirect/foo");
- 	    val q = new SolrQuery("*:*");
+ 	    val server = AsyncHttpSolrServer(jetty.getBaseUrl +"/redirect/foo")
+ 	    val q = new SolrQuery("*:*")
 
  	    // default = false
       var response = server.query(q).map( response => {
          // do nothing
          response
       }).recover {
-        case e: SolrServerException => assertTrue(e.getMessage().contains("redirect"))
+        case e: SolrServerException => assertTrue(e.getMessage.contains("redirect"))
         case other : Throwable => // do nothing
       }
 
-      Await.result(response, 4 seconds)
+      try {
+        Await.result(response, 4 seconds)
+      } finally {
+        DebugServlet.clear()
+        server.shutdown()
+      }
+    }
+ 	}
+
+  @Test
+ 	def testRedirectWithFollowing() : Unit = {
+    new WithApplication(FakeApplication()) {
+ 	    val server = AsyncHttpSolrServer(jetty.getBaseUrl +"/redirect/foo")
+ 	    val q = new SolrQuery("*:*")
 
  	    server.followRedirects = true
-      response = server.query(q).map( response => {
+      val response = server.query(q).map( response => {
          // do nothing
          response
       }).recover {
@@ -491,7 +426,7 @@ class BasicHttpSolrServerTest extends SolrJettyTestBase {
   @Test
  	def testGetRawStream() : Unit = {
     new WithApplication(FakeApplication()) {
-      val server = new AsyncHttpSolrServer(jetty.getBaseUrl().toString() + "/collection1", null)
+      val server = new AsyncHttpSolrServer(jetty.getBaseUrl + "/collection1", null)
       val req = new AsyncQueryRequest(new SolrQuery("foo"))
       var response = server.request(req).map( response => {
         val stream = response.get("stream").asInstanceOf[InputStream]
@@ -509,5 +444,22 @@ class BasicHttpSolrServerTest extends SolrJettyTestBase {
         server.shutdown()
       }
     }
+  }
+
+  private def assertRequest(server: AsyncHttpSolrServer, expectedMethod: String, expectedWriterType: String, expectedContentType: String) : Unit = {
+    assertEquals(expectedMethod, DebugServlet.lastMethod)
+    assertEquals(s"Solr[${classOf[AsyncHttpSolrServer].getName}] 1.0", DebugServlet.headers.get("User-Agent"))
+    assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length)
+    assertEquals(expectedWriterType, DebugServlet.parameters.get(CommonParams.WT)(0))
+    assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length)
+    assertEquals(server.parser.getVersion, DebugServlet.parameters.get(CommonParams.VERSION)(0))
+    assertEquals(expectedContentType, DebugServlet.headers.get("Content-Type"))
+  }
+
+  private def assertRequest(server: AsyncHttpSolrServer, expectedMethod: String, expectedWriterType: String,
+                            expectedContentType: String, anyParamName: String, expectedAnyParamValue: String)  : Unit = {
+    assertRequest(server, expectedMethod, expectedWriterType, expectedContentType)
+    assertEquals(1, DebugServlet.parameters.get(anyParamName).length)
+    assertEquals(expectedAnyParamValue, DebugServlet.parameters.get(anyParamName)(0))
   }
 }
