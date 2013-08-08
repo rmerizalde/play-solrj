@@ -1,6 +1,7 @@
 package org.apache.solr.client.solrj.impl
 
 import play.api.libs.concurrent.Execution.Implicits._
+import play.api.test.{WithApplication, FakeApplication}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -13,24 +14,24 @@ import java.io.{InputStream, IOException}
 
 import org.junit.{Ignore, AfterClass, Test, BeforeClass}
 import org.junit.Assert._
+
 import org.apache.solr.util.ExternalPaths
 import org.apache.solr.client.solrj.embedded.JettySolrRunner
 import org.apache.solr.client.solrj.{SolrServerException, SolrQuery}
 import org.apache.solr.client.solrj.SolrRequest.METHOD
 import org.apache.solr.SolrJettyTestBase
-
-import com.carrotsearch.randomizedtesting.ThreadFilter
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters
-import play.api.test.{WithApplication, FakeApplication}
 import org.apache.solr.common.SolrException.ErrorCode
 import org.apache.solr.common.{SolrInputDocument, SolrException}
 import org.apache.solr.common.params.CommonParams
 import org.apache.solr.client.solrj.request.{AsyncQueryRequest, AsyncUpdateRequest}
 
+import com.carrotsearch.randomizedtesting.ThreadFilter
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters
+
 /**
  * @todo implement response compression and compression test
  */
-object BasicHttpSolrServerTest {
+object BasicAsyncHttpSolrServerTest {
   class RedirectServlet extends HttpServlet {
     protected override def doGet(req: HttpServletRequest,  resp: HttpServletResponse) = {
       resp.sendRedirect("/solr/collection1/select?" + req.getQueryString)
@@ -122,10 +123,10 @@ class KnowPlayThread extends ThreadFilter {
 }
 
 @ThreadLeakFilters(filters = Array(classOf[KnowPlayThread]))
-class BasicHttpSolrServerTest extends SolrJettyTestBase {
+class BasicAsyncHttpSolrServerTest extends SolrJettyTestBase {
 
   private val jetty:JettySolrRunner = SolrJettyTestBase.jetty
-  private val DebugServlet = BasicHttpSolrServerTest.DebugServlet
+  private val DebugServlet = BasicAsyncHttpSolrServerTest.DebugServlet
 
   @Test
   def testTimeout() : Unit = {
