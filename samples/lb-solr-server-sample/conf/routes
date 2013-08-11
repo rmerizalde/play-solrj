@@ -3,3 +3,4 @@
 # ~~~~
 
 GET        /search/:q        controllers.Application.search(q: String)
+
