@@ -70,13 +70,13 @@ object AsyncLBHttpSolrServer {
     }
   }
 
-  class Req(val request: SolrRequest, val servers: List[String]) {
+  class Req(val request: SolrRequest, val servers: util.List[String]) {
 
     /**
      * the number of dead servers to try if there are no live servers left
      * Defaults to the number of servers in this request
      */
-    var numDeadServersToTry: Int = servers.length
+    var numDeadServersToTry: Int = servers.size()
   }
 
   class Rsp {
@@ -136,7 +136,7 @@ object AsyncLBHttpSolrServer {
  *
  * @since solr 1.4
  */
-class AsyncLBHttpSolrServer(private[this] val parser: ResponseParser, solrServerUrl: String*) extends AsyncSolrServer {
+class AsyncLBHttpSolrServer(parser: ResponseParser, solrServerUrl: String*) extends AsyncSolrServer {
 
   // keys to the maps are currently of the form "http://localhost:8983/solr"
   // which should be equivalent to CommonsHttpSolrServer.getBaseURL()
@@ -162,7 +162,7 @@ class AsyncLBHttpSolrServer(private[this] val parser: ResponseParser, solrServer
   }
   updateAliveList()
 
-  protected def makeServer(server: String) : AsyncHttpSolrServer = {
+  private[impl] def makeServer(server: String) : AsyncHttpSolrServer = {
     new AsyncHttpSolrServer(server, parser)
   }
 
@@ -250,14 +250,133 @@ class AsyncLBHttpSolrServer(private[this] val parser: ResponseParser, solrServer
     }
   }
 
-  /*private def addZombie(server: AsyncHttpSolrServer, e: Exception) : Exception = {
+  /**
+   * Tries to query a live server from the list provided in Req. Servers in the dead pool are skipped.
+   * If a request fails due to an IOException, the server is moved to the dead pool for a certain period of
+   * time, or until a test request on that server succeeds.
+   *
+   * Servers are queried in the exact order given (except servers currently in the dead pool are skipped).
+   * If no live servers from the provided list remain to be tried, a number of previously skipped dead servers will be tried.
+   * Req.getNumDeadServersToTry() controls how many dead servers will be tried.
+   *
+   * If no live servers are found a SolrServerException is thrown.
+   *
+   * @param req contains both the request as well as the list of servers to query
+   *
+   * @return the result of the request
+   *
+   * @throws IOException If there is a low-level I/O error.
+   */
+  def request(req: Req) : Future[Rsp] = {
+    val skipped = new util.ArrayList[ServerWrapper](req.numDeadServersToTry)
+    withRequestServers(req, req.servers.iterator(), skipped, null)
+  }
+
+  private def withRequestServers(req: Req, requestServersIt: util.Iterator[String],
+        skipped: util.List[ServerWrapper], ex: Exception) : Future[Rsp] = {
+    if (requestServersIt.hasNext) {
+      val serverStr = normalize(requestServersIt.next())
+      // if the server is currently a zombie, just skip to the next one
+      val wrapper = zombieServers.get(serverStr)
+      if (wrapper != null) {
+        // System.out.println("ZOMBIE SERVER QUERIED: " + serverStr);
+        if (skipped.size() < req.numDeadServersToTry) {
+          skipped.add(wrapper)
+        }
+        withRequestServers(req, requestServersIt, skipped, ex)
+      } else {
+        val server = makeServer(serverStr)
+
+        server.request(req.request).map({ response =>
+          val rsp = new Rsp()
+
+          rsp.server = serverStr
+          rsp.rsp = response
+          rsp
+        }).recoverWith {
+          case e: SolrException => {
+            // we retry on 404 or 403 or 503 - you can see this on solr shutdown
+            if (e.code() == 404 || e.code() == 403 || e.code() == 503 || e.code() == 500) {
+              addZombie(server)
+              withRequestServers(req, requestServersIt, skipped, e)
+            } else {
+              // Server is alive but the request was likely malformed or invalid
+              Future.failed(e)
+            }
+          }
+          case e: IOException => {
+            addZombie(server)
+            withRequestServers(req, requestServersIt, skipped, e)
+          }
+          case e: SolrServerException => {
+            val rootCause = e.getRootCause
+            if (rootCause.isInstanceOf[IOException]) {
+              addZombie(server)
+              withRequestServers(req, requestServersIt, skipped, e)
+            } else {
+              Future.failed(e)
+            }
+          }
+        }
+      }
+    } else {
+      withSkippedServers(req, skipped.iterator(), ex)
+    }
+  }
+
+  private def withSkippedServers(req: Req, skippedServersIt: util.Iterator[ServerWrapper],
+        ex: Exception) : Future[Rsp] = {
+    if (skippedServersIt.hasNext) {
+      val wrapper = skippedServersIt.next()
+      wrapper.solrServer.request(req.request).map({ response =>
+        zombieServers.remove(wrapper.key)
+
+        val rsp = new Rsp()
+        rsp.server = wrapper.key
+        rsp.rsp = response
+        rsp
+      }).recoverWith {
+        case e: SolrException => {
+          // we retry on 404 or 403 or 503 - you can see this on solr shutdown
+          if (e.code() == 404 || e.code() == 403 || e.code() == 503 || e.code() == 500) {
+            // already a zombie, no need to re-add
+            withSkippedServers(req, skippedServersIt, e)
+          } else {
+            // Server is alive but the request was likely malformed or invalid
+            zombieServers.remove(wrapper.key)
+            Future.failed(e)
+          }
+        }
+        case e: IOException => {
+          // already a zombie, no need to re-add
+          withSkippedServers(req, skippedServersIt, e)
+        }
+        case e: SolrServerException => {
+          val rootCause = e.getRootCause
+          if (rootCause.isInstanceOf[IOException]) {
+            // already a zombie, no need to re-add
+            withSkippedServers(req, skippedServersIt, e)
+          } else {
+            Future.failed(e)
+          }
+        }
+      }
+    } else {
+      if (ex == null) {
+        throw new SolrServerException("No live SolrServers available to handle this request")
+      } else {
+        throw new SolrServerException("No live SolrServers available to handle this request:" + zombieServers.keySet(), ex)
+      }
+    }
+  }
+
+  private[impl] def addZombie(server: AsyncHttpSolrServer) : Unit = {
     val wrapper = new ServerWrapper(server)
     wrapper.lastUsed = System.currentTimeMillis()
     wrapper.standard = false
     zombieServers.put(wrapper.key, wrapper)
     startAliveCheckExecutor()
-    e
-  }*/
+  }
 
   private def updateAliveList() : Unit = {
     aliveServers.synchronized  {
@@ -284,10 +403,6 @@ class AsyncLBHttpSolrServer(private[this] val parser: ResponseParser, solrServer
 
   def addSolrServer(server: String) : Unit = {
     val solrServer = makeServer(server)
-    addToAlive(new ServerWrapper(solrServer))
-  }
-
-  private[impl] def addSolrServer(solrServer: AsyncHttpSolrServer) : Unit = {
     addToAlive(new ServerWrapper(solrServer))
   }
 

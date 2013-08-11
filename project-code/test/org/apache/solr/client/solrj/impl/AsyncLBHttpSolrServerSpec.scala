@@ -19,31 +19,50 @@ import org.apache.solr.common.SolrException
 
 
 /**
- * Test the LBHttpSolrServer.
+ * Test the AsyncLBHttpSolrServer.
  */
 class AsyncLBHttpSolrServerSpec extends Specification with Mockito {
 
   val parser = new BinaryResponseParser
 
+  private[this] def setup = {
+    var lbServer = createServer()
+    val server1 = mock[AsyncHttpSolrServer]
+    val server2 = mock[AsyncHttpSolrServer]
+    val response = mock[NamedList[Object]]
+    val query = new SolrQuery("*:*")
+    val urlServer1 = "http://foo.org:8900/solr"
+    val urlServer2 = "http://foo.org:8901/solr"
+
+    server1.baseUrl returns urlServer1
+    server2.baseUrl returns urlServer2
+
+    lbServer.makeServer(urlServer1) returns server1
+    lbServer.makeServer(urlServer2) returns server2
+
+    lbServer.addSolrServer(urlServer1)
+    lbServer.addSolrServer(urlServer2)
+
+    (lbServer, server1, server2, response, query)
+  }
+
+  private[this] def createServer() : AsyncLBHttpSolrServer = {
+    val server = spy(new AsyncLBHttpSolrServer(parser))
+
+    // prevent alive check thread from starting
+    server.aliveCheckActor = mock[Cancellable]
+    server
+  }
+
   "The LBHttpSolrServer" should {
 
     "mark failed server as zombie and try another alive server" in new WithApplication {
-      val lbServer = createServer()
-      val server1 = mock[AsyncHttpSolrServer]
-      val server2 = mock[AsyncHttpSolrServer]
-      val response = mock[NamedList[Object]]
-      val query = new SolrQuery("*:*")
+      val (lbServer, server1, server2, response, query) = setup
       val failedResponse = failed(new SolrServerException(new IOException()))
-
-      server1.baseUrl returns "http://foo.org:8900/solr"
-      server2.baseUrl returns "http://foo.org:8901/solr"
 
       server1.request(any[SolrRequest]) returns failedResponse
       server1.query(any[SolrParams]) returns failedResponse
       server2.request(any[SolrRequest]) returns successful(response)
-
-      lbServer.addSolrServer(server1)
-      lbServer.addSolrServer(server2)
 
       val futureResponse = lbServer.query(query)
 
@@ -55,31 +74,19 @@ class AsyncLBHttpSolrServerSpec extends Specification with Mockito {
         lbServer.aliveServerCount must equalTo(1)
         lbServer.zombieServerCount must equalTo(1)
         futureResponse.value.get.isSuccess must beTrue
-        futureResponse.value.get.isFailure must beFalse
       } finally {
         lbServer.shutdown()
       }
     }
 
     "mark all failed servers as zombies and throw an exception" in new WithApplication {
-      val lbServer = createServer()
-      val server1 = mock[AsyncHttpSolrServer]
-      val server2 = mock[AsyncHttpSolrServer]
-      val response = mock[NamedList[Object]]
-      val query = new SolrQuery("*:*")
+      val (lbServer, server1, server2, response, query) = setup
       val failedResponse = failed(new SolrServerException(new IOException()))
-
-      server1.baseUrl returns "http://foo.org:8900/solr"
-      server2.baseUrl returns "http://foo.org:8901/solr"
-
 
       server1.request(any[SolrRequest]) returns failedResponse
       server1.query(any[SolrParams]) returns failedResponse
       server2.request(any[SolrRequest]) returns failedResponse
       server2.query(any[SolrParams]) returns failedResponse
-
-      lbServer.addSolrServer(server1)
-      lbServer.addSolrServer(server2)
 
       val futureResponse = lbServer.query(query)
 
@@ -91,7 +98,6 @@ class AsyncLBHttpSolrServerSpec extends Specification with Mockito {
 
         lbServer.aliveServerCount must equalTo(0)
         lbServer.zombieServerCount must equalTo(2)
-        futureResponse.value.get.isSuccess must beFalse
         futureResponse.value.get.isFailure must beTrue
       } finally {
         lbServer.shutdown()
@@ -99,24 +105,13 @@ class AsyncLBHttpSolrServerSpec extends Specification with Mockito {
     }
 
     "mark zombie servers that recovered from failure as alive" in new WithApplication {
-      val lbServer = createServer()
-      val server1 = mock[AsyncHttpSolrServer]
-      val server2 = mock[AsyncHttpSolrServer]
-      val response = mock[NamedList[Object]]
-      val query = new SolrQuery("*:*")
+      val (lbServer, server1, server2, response, query) = setup
       val failedResponse = failed(new SolrServerException(new IOException()))
-
-      server1.baseUrl returns "http://foo.org:8900/solr"
-      server2.baseUrl returns "http://foo.org:8901/solr"
-
 
       server1.request(any[SolrRequest]) returns failedResponse
       server1.query(any[SolrParams]) returns failedResponse
       server2.request(any[SolrRequest]) returns failedResponse
       server2.query(any[SolrParams]) returns failedResponse
-
-      lbServer.addSolrServer(server1)
-      lbServer.addSolrServer(server2)
 
       val futureResponse = lbServer.query(query)
 
@@ -128,7 +123,6 @@ class AsyncLBHttpSolrServerSpec extends Specification with Mockito {
 
         lbServer.aliveServerCount must equalTo(0)
         lbServer.zombieServerCount must equalTo(2)
-        futureResponse.value.get.isSuccess must beFalse
         futureResponse.value.get.isFailure must beTrue
       } finally {
         // nothing
@@ -143,29 +137,18 @@ class AsyncLBHttpSolrServerSpec extends Specification with Mockito {
       try {
         lbServer.aliveServerCount must equalTo(2)
         lbServer.zombieServerCount must equalTo(0)
-
       } finally {
         lbServer.shutdown()
       }
     }
 
-    "not mark server as zombie when query error occurs" in new WithApplication {
-      val lbServer = createServer()
-      val server1 = mock[AsyncHttpSolrServer]
-      val server2 = mock[AsyncHttpSolrServer]
-      val response = mock[NamedList[Object]]
-      val query = new SolrQuery("*:*")
+    "not mark server as zombie when a query error occurs" in new WithApplication {
+      val (lbServer, server1, server2, response, query) = setup
       val exception = mock[SolrException]
       val failedResponse = failed(exception)
 
-      server1.baseUrl returns "http://foo.org:8900/solr"
-      server2.baseUrl returns "http://foo.org:8901/solr"
-
       server1.request(any[SolrRequest]) returns failedResponse
       server2.request(any[SolrRequest]) returns successful(response)
-
-      lbServer.addSolrServer(server1)
-      lbServer.addSolrServer(server2)
 
       val futureResponse = lbServer.query(query)
 
@@ -176,22 +159,12 @@ class AsyncLBHttpSolrServerSpec extends Specification with Mockito {
 
         lbServer.aliveServerCount must equalTo(2)
         lbServer.zombieServerCount must equalTo(0)
-        futureResponse.value.get.isSuccess must beFalse
         futureResponse.value.get.isFailure must beTrue
       } finally {
         lbServer.shutdown()
       }
     }
+
+
   }
-
-
-  private def createServer() : AsyncLBHttpSolrServer = {
-    val server = new AsyncLBHttpSolrServer(parser)
-
-    // prevent alive check thread from starting
-    server.aliveCheckActor = mock[Cancellable]
-    server
-  }
-
-
 }

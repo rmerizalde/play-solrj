@@ -26,7 +26,6 @@ import org.apache.solr.client.solrj.response.UpdateResponse
 
 class AsyncUpdateRequest extends UpdateRequest with AsyncRequest {
 
-   // @todo figure out exception handling
   def process(server: AsyncSolrServer) : Future[UpdateResponse] = {
     val startTime: Long = System.currentTimeMillis()
 

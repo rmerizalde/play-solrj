@@ -138,8 +138,13 @@ class BasicAsyncHttpSolrServerTest extends SolrJettyTestBase {
       val response = server.query(q, METHOD.GET).map( response => {
         fail("No exception thrown.")
       }).recover {
-        case e: TimeoutException =>  {
-          assertTrue(e.getMessage.contains("No response received after"))
+        case e: SolrServerException =>  {
+          val rootCause = e.getRootCause
+          if (rootCause.isInstanceOf[TimeoutException]) {
+            assertTrue(rootCause.getMessage.contains("No response received after"))
+          } else {
+            fail("Unexpected exception: " + rootCause.getMessage)
+          }
         }
         case other => {
           fail("Unexpected exception: " + other.getMessage)

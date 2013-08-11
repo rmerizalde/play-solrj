@@ -245,7 +245,7 @@ class AsyncHttpSolrServer(_baseUrl: String, var parser: ResponseParser) extends 
         }
       }
       else {
-        throw new SolrServerException("Unsupported method: "+req.getMethod )
+        throw new SolrServerException("Unsupported method: " + req.getMethod )
       }
     } catch {
       case ex: IOException => throw new SolrServerException("error reading streams", ex)
