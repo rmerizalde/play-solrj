@@ -328,7 +328,10 @@ class AsyncHttpSolrServer(_baseUrl: String, var parser: ResponseParser) extends 
   private def getContentCharset(contentType: String) : String = {
     var charsetName:String = null
     if (contentType != null) {
-      charsetName = ContentType.parse(contentType).getCharset.name
+      val charset = ContentType.parse(contentType).getCharset
+      if (charset != null) {
+        charsetName = charset.name
+      }
     }
     charsetName
   }
