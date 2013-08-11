@@ -251,6 +251,7 @@ class BasicAsyncHttpSolrServerTest extends SolrJettyTestBase {
       }
 
       try {
+        Await.result(response, 4 seconds)
         assertRequest(server, "get", "xml", null, "a", "\u1234")
         assertEquals("keep-alive", DebugServlet.headers.get("Connection"))
       } finally {
@@ -267,6 +268,7 @@ class BasicAsyncHttpSolrServerTest extends SolrJettyTestBase {
       }
 
       try {
+        Await.result(response, 4 seconds)
         assertRequest(server, "post", "xml", "application/x-www-form-urlencoded; charset=UTF-8", "a", "\u1234")
         assertEquals("keep-alive", DebugServlet.headers.get("Connection"))
         assertEquals("UTF-8", DebugServlet.headers.get("Content-Charset"))
