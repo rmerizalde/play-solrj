@@ -19,7 +19,6 @@ object ApplicationBuild extends Build {
     resolvers += "Restlet repository" at "http://maven.restlet.org/",
     organization  := "org.opencommercesearch",
     publishMavenStyle := false,
-    credentials += Credentials("Artifactory Realm","repo.scala-sbt.org", "ricardo.merizalde", "{DESede}8zk/h0gBKPUAKXiH4MDMhQ=="),
     publishTo <<= (version) { version: String =>
        val scalasbt = "http://repo.scala-sbt.org/scalasbt/"
        val (name, url) = if (version.contains("-SNAPSHOT"))
