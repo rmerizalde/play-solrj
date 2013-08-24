@@ -16,7 +16,18 @@ object ApplicationBuild extends Build {
 
   val main = play.Project(appName, appVersion, appDependencies).settings(
     scalacOptions ++= Seq("-feature"),
-    resolvers += "Restlet repository" at "http://maven.restlet.org/"
+    resolvers += "Restlet repository" at "http://maven.restlet.org/",
+    organization  := "org.opencommercesearch",
+    publishMavenStyle := false,
+    credentials += Credentials("Artifactory Realm","repo.scala-sbt.org", "ricardo.merizalde", "{DESede}8zk/h0gBKPUAKXiH4MDMhQ=="),
+    publishTo <<= (version) { version: String =>
+       val scalasbt = "http://repo.scala-sbt.org/scalasbt/"
+       val (name, url) = if (version.contains("-SNAPSHOT"))
+         ("sbt-plugin-snapshots", scalasbt+"sbt-plugin-snapshots")
+       else
+         ("sbt-plugin-releases", scalasbt+"sbt-plugin-releases")
+       Some(Resolver.url(name, new URL(url))(Resolver.ivyStylePatterns))
+    }
   )
 
 }
