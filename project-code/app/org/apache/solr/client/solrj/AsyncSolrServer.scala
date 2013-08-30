@@ -30,11 +30,14 @@ import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION
 import org.apache.solr.client.solrj.response.{SolrPingResponse, QueryResponse, UpdateResponse}
 import org.apache.solr.client.solrj.SolrRequest.METHOD
 import org.apache.solr.client.solrj.impl.StreamingBinaryResponseParser
+import org.apache.solr.client.solrj.beans.DocumentObjectBinder
 
 /**
  * @todo add support for beans??
  */
 abstract class AsyncSolrServer {
+  lazy val binder = new DocumentObjectBinder
+
   /**
    * Adds a collection of documents
    * @param docs  the collection of documents
