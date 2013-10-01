@@ -116,13 +116,13 @@ object BasicAsyncHttpSolrServerTest {
 
 }
 
-class KnowPlayThread extends ThreadFilter {
+class KnownPlayThread extends ThreadFilter {
   def reject(t: Thread) : Boolean = {
     t.getName.startsWith("play-scheduler") || t.getName.startsWith("play-akka")
   }
 }
 
-@ThreadLeakFilters(filters = Array(classOf[KnowPlayThread]))
+@ThreadLeakFilters(filters = Array(classOf[KnownPlayThread]))
 class BasicAsyncHttpSolrServerTest extends SolrJettyTestBase {
 
   private val jetty:JettySolrRunner = SolrJettyTestBase.jetty
