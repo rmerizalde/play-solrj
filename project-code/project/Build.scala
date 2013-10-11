@@ -8,8 +8,8 @@ object ApplicationBuild extends Build {
   val appVersion      = "0.2-SNAPSHOT"
 
   val appDependencies = Seq(
-    "org.apache.solr" % "solr-solrj" % "4.4.0",
-    "org.apache.solr" % "solr-test-framework" % "4.4.0" % "test",
+    "org.apache.solr" % "solr-solrj" % "4.5.0",
+    "org.apache.solr" % "solr-test-framework" % "4.5.0" % "test",
     "org.mockito" % "mockito-all" % "1.9.5" % "test"
   )
 
