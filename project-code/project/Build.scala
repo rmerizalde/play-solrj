@@ -5,7 +5,7 @@ import play.Project._
 object ApplicationBuild extends Build {
 
   val appName         = "play-solrj"
-  val appVersion      = "0.2-SNAPSHOT"
+  val appVersion      = "0.3-SNAPSHOT"
 
   val appDependencies = Seq(
     "org.apache.solr" % "solr-solrj" % "4.5.1",
