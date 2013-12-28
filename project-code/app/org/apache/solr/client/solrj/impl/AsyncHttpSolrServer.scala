@@ -149,7 +149,7 @@ class AsyncHttpSolrServer(_baseUrl: String, var parser: ResponseParser) extends 
         withResponse(WS.url(baseUrl + path + ClientUtils.toQueryString(params, false))
           .withFollowRedirects(followRedirects)
           .withHeaders(("User-Agent", Agent))
-          .withTimeout(timeout)
+          .withRequestTimeout(timeout)
           .get(), processor)
       } else if (SolrRequest.METHOD.POST == req.getMethod ) {
         val url = baseUrl + path
@@ -211,7 +211,7 @@ class AsyncHttpSolrServer(_baseUrl: String, var parser: ResponseParser) extends 
           withResponse(requestHolder
             .withFollowRedirects(followRedirects)
             .withHeaders(("User-Agent", Agent))
-            .withTimeout(timeout)
+            .withRequestTimeout(timeout)
             .post(outputStream.toByteArray), processor)
         } else {
           // Single stream as body
@@ -240,7 +240,7 @@ class AsyncHttpSolrServer(_baseUrl: String, var parser: ResponseParser) extends 
           withResponse(WS.url(url + ClientUtils.toQueryString(params, false))
             .withFollowRedirects(followRedirects)
             .withHeaders(("User-Agent", Agent), ("Content-Type", contentStream(0).getContentType))
-            .withTimeout(timeout)
+            .withRequestTimeout(timeout)
             .post(outputStream.toByteArray), processor)
         }
       }

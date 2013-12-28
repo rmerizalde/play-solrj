@@ -105,8 +105,7 @@ class AsyncCloudSolrServerSpec extends Specification with Mockito {
         there was one(lbServer).request(argument.capture())
         val serverUrls = JIterableWrapper(argument.getValue.servers)
 
-        serverUrls must have size 3
-        serverUrls must contain(urlServer1, urlServer2, urlServer3)
+        serverUrls must containAllOf(Seq(urlServer1, urlServer2, urlServer3))
       } finally {
         server.shutdown()
       }
@@ -124,17 +123,16 @@ class AsyncCloudSolrServerSpec extends Specification with Mockito {
         there was one(lbServer).request(argument.capture())
         val serverUrls = JIterableWrapper(argument.getValue.servers)
 
-        serverUrls must have size 3
-        serverUrls must contain(
+        serverUrls must containAllOf(Seq(
           s"$urlServer1/$testCollection/",
           s"$urlServer2/$testCollection/",
-          s"$urlServer3/$testCollection/")
+          s"$urlServer3/$testCollection/"))
       } finally {
         server.shutdown()
       }
     }
 
-    "add the leaders at the front of the url list when sendin updates to leaders" in new WithApplication {
+    "add the leaders at the front of the url list when sending updates to leaders" in new WithApplication {
       val (server, lbServer) = setupServers
       val request = mock[UpdateRequest]
       val argument = ArgumentCaptor.forClass(classOf[Req])
@@ -146,11 +144,10 @@ class AsyncCloudSolrServerSpec extends Specification with Mockito {
         there was one(lbServer).request(argument.capture())
         val serverUrls = JIterableWrapper(argument.getValue.servers)
 
-        serverUrls must have size 3
-        serverUrls must contain(
+        serverUrls must containAllOf(Seq(
           s"$urlServer1/$testCollection/",
           s"$urlServer2/$testCollection/",
-          s"$urlServer3/$testCollection/")
+          s"$urlServer3/$testCollection/"))
         argument.getValue.servers.get(0) must beEqualTo(s"$urlServer2/$testCollection/")
       } finally {
         server.shutdown()

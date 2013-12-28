@@ -141,7 +141,7 @@ class BasicAsyncHttpSolrServerTest extends SolrJettyTestBase {
         case e: SolrServerException =>  {
           val rootCause = e.getRootCause
           if (rootCause.isInstanceOf[TimeoutException]) {
-            assertTrue(rootCause.getMessage.contains("No response received after"))
+            assertTrue(rootCause.getMessage.contains("Request reached time out of"))
           } else {
             fail("Unexpected exception: " + rootCause.getMessage)
           }
