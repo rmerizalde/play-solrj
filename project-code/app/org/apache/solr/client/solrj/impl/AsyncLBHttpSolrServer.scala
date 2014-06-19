@@ -163,7 +163,7 @@ class AsyncLBHttpSolrServer(parser: ResponseParser, solrServerUrl: String*) exte
   updateAliveList()
 
   private[impl] def makeServer(server: String) : AsyncHttpSolrServer = {
-    new AsyncHttpSolrServer(server, parser)
+   new AsyncHttpSolrServer(server, parser)
   }
 
   /**
@@ -279,7 +279,6 @@ class AsyncLBHttpSolrServer(parser: ResponseParser, solrServerUrl: String*) exte
       // if the server is currently a zombie, just skip to the next one
       val wrapper = zombieServers.get(serverStr)
       if (wrapper != null) {
-        // System.out.println("ZOMBIE SERVER QUERIED: " + serverStr);
         if (skipped.size() < req.numDeadServersToTry) {
           skipped.add(wrapper)
         }
