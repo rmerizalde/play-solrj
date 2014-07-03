@@ -94,6 +94,7 @@ class AsyncHttpSolrServer(_baseUrl: String, var parser: ResponseParser) extends 
   //private[this] var maxRetries = 0
   var useMultiPartPost = false
   var followRedirects = false
+  var timeout = Play.current.configuration.getInt("ws.requestTimeout").getOrElse(0).toInt
 
   /**
    * Process the req. If
@@ -144,8 +145,6 @@ class AsyncHttpSolrServer(_baseUrl: String, var parser: ResponseParser) extends 
     params = wparams
 
     try {
-
-      val timeout = Play.current.configuration.getInt("ws.requestTimeout").getOrElse(0).toInt
       if (SolrRequest.METHOD.GET == req.getMethod) {
         if( streams != null ) {
           throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "GET can't send streams!" )
