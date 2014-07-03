@@ -43,6 +43,8 @@ import org.apache.http.entity.{InputStreamEntity, ContentType}
 import org.apache.http.client.entity.UrlEncodedFormEntity
 import org.apache.solr.client.solrj.request.RequestWriter
 
+import play.api.Play
+
 object AsyncHttpSolrServer {
   /**
    * @param baseUrl
@@ -92,7 +94,6 @@ class AsyncHttpSolrServer(_baseUrl: String, var parser: ResponseParser) extends 
   //private[this] var maxRetries = 0
   var useMultiPartPost = false
   var followRedirects = false
-  var timeout = 0 // default is to wait infinitely
 
   /**
    * Process the req. If
@@ -106,6 +107,7 @@ class AsyncHttpSolrServer(_baseUrl: String, var parser: ResponseParser) extends 
    *
    * @see #req(org.apache.solr.client.solrj.SolrRequest,
    *      org.apache.solr.client.solrj.ResponseParser)
+   * @todo need to use ws.timeout.connection, ws.timeout.idle for timeout settings
    */
   override def request(req: SolrRequest) : Future[NamedList[Object]] = {
     var responseParser = req.getResponseParser
@@ -142,6 +144,8 @@ class AsyncHttpSolrServer(_baseUrl: String, var parser: ResponseParser) extends 
     params = wparams
 
     try {
+
+      val timeout = Play.current.configuration.getInt("ws.requestTimeout").getOrElse(0).toInt
       if (SolrRequest.METHOD.GET == req.getMethod) {
         if( streams != null ) {
           throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "GET can't send streams!" )
