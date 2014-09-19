@@ -133,7 +133,8 @@ class BasicAsyncHttpSolrServerTest extends SolrJettyTestBase {
     new WithApplication(FakeApplication()) {
       val server = AsyncHttpSolrServer(jetty.getBaseUrl.toString + "/slow/foo")
       val q = new SolrQuery("*:*")
-      server.timeout = 2000
+      server.getTimeout = 2000
+      server.postTimeout = 2000
 
       val response = server.query(q, METHOD.GET).map( response => {
         fail("No exception thrown.")
