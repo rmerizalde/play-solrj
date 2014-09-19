@@ -94,7 +94,8 @@ class AsyncHttpSolrServer(_baseUrl: String, var parser: ResponseParser) extends 
   //private[this] var maxRetries = 0
   var useMultiPartPost = false
   var followRedirects = false
-  var timeout = Play.current.configuration.getInt("ws.requestTimeout").getOrElse(0).toInt
+  var getTimeout = Play.current.configuration.getInt("ws.get.requestTimeout").getOrElse(0).toInt
+  var postTimeout = Play.current.configuration.getInt("ws.post.requestTimeout").getOrElse(0).toInt
 
   /**
    * Process the req. If
@@ -152,7 +153,7 @@ class AsyncHttpSolrServer(_baseUrl: String, var parser: ResponseParser) extends 
         withResponse(WS.url(baseUrl + path + ClientUtils.toQueryString(params, false))
           .withFollowRedirects(followRedirects)
           .withHeaders(("User-Agent", Agent))
-          .withRequestTimeout(timeout)
+          .withRequestTimeout(getTimeout)
           .get(), processor)
       } else if (SolrRequest.METHOD.POST == req.getMethod ) {
         val url = baseUrl + path
@@ -214,7 +215,7 @@ class AsyncHttpSolrServer(_baseUrl: String, var parser: ResponseParser) extends 
           withResponse(requestHolder
             .withFollowRedirects(followRedirects)
             .withHeaders(("User-Agent", Agent))
-            .withRequestTimeout(timeout)
+            .withRequestTimeout(postTimeout)
             .post(outputStream.toByteArray), processor)
         } else {
           // Single stream as body
@@ -243,7 +244,7 @@ class AsyncHttpSolrServer(_baseUrl: String, var parser: ResponseParser) extends 
           withResponse(WS.url(url + ClientUtils.toQueryString(params, false))
             .withFollowRedirects(followRedirects)
             .withHeaders(("User-Agent", Agent), ("Content-Type", contentStream(0).getContentType))
-            .withRequestTimeout(timeout)
+            .withRequestTimeout(postTimeout)
             .post(outputStream.toByteArray), processor)
         }
       }
