@@ -17,33 +17,32 @@ package org.apache.solr.client.solrj.impl
 * limitations under the License.
 */
 
-import play.api.libs.concurrent.Execution.Implicits._
-import play.api.libs.ws.WS
-import play.api.libs.ws.Response
-
-import scala.concurrent.Future
-import scala.collection.convert.Wrappers.JIterableWrapper
-
-import java.io.{ByteArrayOutputStream, IOException, InputStream}
-import java.lang.{Throwable, String}
+import java.io._
+import java.net.{ConnectException, SocketTimeoutException}
 import java.nio.charset.Charset
-import java.net.{SocketTimeoutException, ConnectException}
 import java.util
 
-import org.apache.solr.client.solrj.{SolrServerException, SolrRequest, AsyncSolrServer, ResponseParser}
-import org.apache.solr.common.util.{ContentStream, NamedList}
-import org.apache.solr.common.params.{CommonParams, ModifiableSolrParams}
-import org.apache.solr.common.SolrException
-import org.apache.solr.client.solrj.util.ClientUtils
-import org.apache.http.{Header, HttpEntity, HttpStatus, NameValuePair}
-import org.apache.http.entity.mime.{HttpMultipartMode, MultipartEntity, FormBodyPart}
-import org.apache.http.entity.mime.content.{InputStreamBody, StringBody}
-import org.apache.http.message.{BasicHeader, BasicNameValuePair}
-import org.apache.http.entity.{InputStreamEntity, ContentType}
+import org.apache.commons.io.input.ReaderInputStream
 import org.apache.http.client.entity.UrlEncodedFormEntity
+import org.apache.http.entity.mime.content.{InputStreamBody, StringBody}
+import org.apache.http.entity.mime.{FormBodyPart, HttpMultipartMode, MultipartEntity}
+import org.apache.http.entity.{ContentType, InputStreamEntity}
+import org.apache.http.message.{BasicHeader, BasicNameValuePair}
+import org.apache.http.{Header, HttpEntity, HttpStatus, NameValuePair}
 import org.apache.solr.client.solrj.request.RequestWriter
-
+import org.apache.solr.client.solrj.util.ClientUtils
+import org.apache.solr.client.solrj.{AsyncSolrServer, ResponseParser, SolrRequest, SolrServerException}
+import org.apache.solr.common.SolrException
+import org.apache.solr.common.params.{CommonParams, ModifiableSolrParams}
+import org.apache.solr.common.util.{ContentStream, NamedList}
 import play.api.Play
+import play.api.Play.current
+import play.api.libs.concurrent.Execution.Implicits._
+import play.api.libs.ws.ning.NingWSResponse
+import play.api.libs.ws.{WSResponse, WS}
+
+import scala.collection.convert.Wrappers.JIterableWrapper
+import scala.concurrent.Future
 
 object AsyncHttpSolrServer {
   /**
@@ -94,8 +93,8 @@ class AsyncHttpSolrServer(_baseUrl: String, var parser: ResponseParser) extends 
   //private[this] var maxRetries = 0
   var useMultiPartPost = false
   var followRedirects = false
-  var getTimeout = Play.current.configuration.getInt("ws.get.requestTimeout").getOrElse(0).toInt
-  var postTimeout = Play.current.configuration.getInt("ws.post.requestTimeout").getOrElse(0).toInt
+  var getTimeout = Play.current.configuration.getInt("ws.get.requestTimeout").getOrElse(0)
+  var postTimeout = Play.current.configuration.getInt("ws.post.requestTimeout").getOrElse(0)
 
   /**
    * Process the req. If
@@ -150,7 +149,8 @@ class AsyncHttpSolrServer(_baseUrl: String, var parser: ResponseParser) extends 
         if( streams != null ) {
           throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "GET can't send streams!" )
         }
-        withResponse(WS.url(baseUrl + path + ClientUtils.toQueryString(params, false))
+        val requestUrl = baseUrl + path + ClientUtils.toQueryString(params, false)
+        withResponse(WS.url(requestUrl)
           .withFollowRedirects(followRedirects)
           .withHeaders(("User-Agent", Agent))
           .withRequestTimeout(getTimeout)
@@ -241,7 +241,8 @@ class AsyncHttpSolrServer(_baseUrl: String, var parser: ResponseParser) extends 
 
           entity.writeTo(outputStream)
           // It is has one stream, it is the post body, put the params in the URL
-          withResponse(WS.url(url + ClientUtils.toQueryString(params, false))
+          val requestUrl = url + ClientUtils.toQueryString(params, false)
+          withResponse( WS.url(requestUrl)
             .withFollowRedirects(followRedirects)
             .withHeaders(("User-Agent", Agent), ("Content-Type", contentStream(0).getContentType))
             .withRequestTimeout(postTimeout)
@@ -256,16 +257,18 @@ class AsyncHttpSolrServer(_baseUrl: String, var parser: ResponseParser) extends 
     }
   }
 
-  private def withResponse(wsResponse: Future[Response], processor: ResponseParser) : Future[NamedList[Object]] = {
+  private def withResponse(wsResponse: Future[WSResponse], processor: ResponseParser) : Future[NamedList[Object]] = {
     wsResponse.map { response =>
       var shouldClose:Boolean = true
       var respBody:InputStream = null
+      // @todo: migrate this
+      val ningResponse = response.asInstanceOf[NingWSResponse]
 
       try {
         val httpStatus = response.status
 
         // Read the contents
-        respBody = response.ahcResponse.getResponseBodyAsStream
+        respBody = ningResponse.ahcResponse.getResponseBodyAsStream
 
         // handle some http level checks before trying to parse the response
         httpStatus match  {
@@ -287,7 +290,7 @@ class AsyncHttpSolrServer(_baseUrl: String, var parser: ResponseParser) extends 
           shouldClose = false
           rsp
         } else {
-          val charset = getContentCharset(response.ahcResponse.getContentType)
+          val charset = getContentCharset(ningResponse.ahcResponse.getContentType)
           val rsp = processor.processResponse(respBody, charset)
           if (httpStatus != HttpStatus.SC_OK) {
             var reason:String = null
@@ -305,7 +308,7 @@ class AsyncHttpSolrServer(_baseUrl: String, var parser: ResponseParser) extends 
               val msg = new StringBuilder
               msg.append(response.statusText)
               msg.append("\n\n")
-              msg.append("req: " + response.ahcResponse.getUri)
+              msg.append("req: " + ningResponse.ahcResponse.getUri)
               reason = java.net.URLDecoder.decode(msg.toString(), Utf_8)
             }
             throw new SolrException(

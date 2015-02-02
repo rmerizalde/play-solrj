@@ -1,21 +1,24 @@
 import sbt._
 import Keys._
-import play.Project._
+import play.PlayImport._
 
 object ApplicationBuild extends Build {
 
   val appName         = "play-solrj"
-  val appVersion      = "0.4-SNAPSHOT"
-
-  val appDependencies = Seq(
-    "org.apache.solr" % "solr-solrj" % "4.8.1",
-    "org.apache.solr" % "solr-test-framework" % "4.8.1" % "test",
-    "org.mockito" % "mockito-all" % "1.9.5" % "test"
-  )
+  val appVersion      = "0.5-SNAPSHOT"
 
 
-  val main = play.Project(appName, appVersion, appDependencies).settings(
+
+  val main = Project(appName, file(".")).enablePlugins(play.PlayScala).settings(
+    version := appVersion,
+    libraryDependencies ++= Seq(
+      ws,
+      "org.apache.solr" % "solr-solrj" % "4.8.1",
+      "org.apache.solr" % "solr-test-framework" % "4.8.1" % "test",
+      "org.mockito" % "mockito-all" % "1.9.5" % "test"
+    ),
     scalacOptions ++= Seq("-feature"),
+    scalaVersion := "2.10.4",
     resolvers += "Restlet repository" at "http://maven.restlet.org/",
     organization  := "org.opencommercesearch",
     publishMavenStyle := true,
