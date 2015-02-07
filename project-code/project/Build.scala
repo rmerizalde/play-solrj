@@ -7,8 +7,6 @@ object ApplicationBuild extends Build {
   val appName         = "play-solrj"
   val appVersion      = "0.5-SNAPSHOT"
 
-
-
   val main = Project(appName, file(".")).enablePlugins(play.PlayScala).settings(
     version := appVersion,
     libraryDependencies ++= Seq(
@@ -18,7 +16,7 @@ object ApplicationBuild extends Build {
       "org.mockito" % "mockito-all" % "1.9.5" % "test"
     ),
     scalacOptions ++= Seq("-feature"),
-    scalaVersion := "2.10.4",
+    scalaVersion := "2.11.1",
     resolvers += "Restlet repository" at "http://maven.restlet.org/",
     organization  := "org.opencommercesearch",
     publishMavenStyle := true,
