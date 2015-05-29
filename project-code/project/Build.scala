@@ -20,13 +20,13 @@ object ApplicationBuild extends Build {
     resolvers += "Restlet repository" at "http://maven.restlet.org/",
     organization  := "org.opencommercesearch",
     publishMavenStyle := true,
-    publishTo <<= (version) { version: String =>
-       val scalasbt = "http://repo.scala-sbt.org/scalasbt/"
-       val (name, url) = if (version.contains("-SNAPSHOT"))
-         ("sbt-plugin-snapshots", scalasbt+"sbt-plugin-snapshots")
-       else
-         ("sbt-plugin-releases", scalasbt+"sbt-plugin-releases")
-       Some(Resolver.url(name, new URL(url))(Resolver.mavenStylePatterns))
+    publishTo <<= version { version: String =>
+      val baseUrl = "http://oss.jfrog.org/artifactory/"
+      val (name, url) = if (version.contains("-SNAPSHOT"))
+        ("oss-snapshots-pub", baseUrl + "oss-snapshot-local/")
+      else
+        ("oss-pub", baseUrl + "oss-release-local/")
+      Some(Resolver.url(name, new URL(url))(Resolver.mavenStylePatterns))
     }
   )
 
